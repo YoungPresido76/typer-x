@@ -1,15 +1,14 @@
-import { Home, Zap, Trash2, BarChart3, User } from 'lucide-react'
+import { Home, Zap, ShoppingBag, BarChart3, User } from 'lucide-react'
+import { useStore } from '@/store/useStore'
 
-interface BottomNavProps {
-  activeTab: string
-  onTabChange: (tab: string) => void
-}
+export const BottomNav = () => {
+  const activeTab = useStore((state) => state.activeTab)
+  const setActiveTab = useStore((state) => state.setActiveTab)
 
-export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
   const tabs = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'missions', label: 'Missions', icon: Zap },
-    { id: 'shop', label: 'Shop', icon: Trash2 },
+    { id: 'shop', label: 'Shop', icon: ShoppingBag },
     { id: 'stats', label: 'Stats', icon: BarChart3 },
     { id: 'profile', label: 'Profile', icon: User },
   ]
@@ -20,7 +19,7 @@ export const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
         {tabs.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => onTabChange(id)}
+            onClick={() => setActiveTab(id)}
             className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-s transition-smooth ${
               activeTab === id
                 ? 'text-primary'
