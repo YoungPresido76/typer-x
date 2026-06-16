@@ -5,6 +5,7 @@ interface BadgeProps {
   variant?: 'primary' | 'success' | 'error' | 'info' | 'secondary'
   size?: 'sm' | 'md' | 'lg'
   icon?: ReactNode
+  className?: string
 }
 
 export const Badge = ({
@@ -12,6 +13,7 @@ export const Badge = ({
   variant = 'primary',
   size = 'md',
   icon,
+  className = '',
 }: BadgeProps) => {
   const baseStyles =
     'inline-flex items-center justify-center gap-1.5 font-semibold rounded-s'
@@ -31,7 +33,7 @@ export const Badge = ({
   }
 
   return (
-    <span className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]}`}>
+    <span className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}>
       {icon && <span>{icon}</span>}
       {children}
     </span>
