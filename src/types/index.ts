@@ -57,9 +57,11 @@ export interface StoreState {
   setMissions: (missions: Mission[]) => void
   setShopItems: (items: ShopItem[]) => void
   setLeaderboard: (entries: LeaderboardEntry[]) => void
+  loadPlayerData: (userId: string) => Promise<void>
+  refreshLeaderboard: () => Promise<void>
   incrementXp: (xp: number) => void
-  claimMission: (missionId: string) => void
-  purchaseItem: (itemId: string) => void
+  claimMission: (missionId: string) => Promise<void>
+  purchaseItem: (itemId: string) => Promise<void>
 }
 
 // Level info
