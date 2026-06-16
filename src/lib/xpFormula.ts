@@ -59,7 +59,7 @@ export const getLevelTitle = (level: number): string => {
   if (level <= 20) return 'Word Forger'
   if (level <= 35) return 'Cipher Knight'
   if (level <= 49) return 'Type Master'
-  return '🏆 Typer X Legend'
+  return 'Typer X Legend'
 }
 
 /**
