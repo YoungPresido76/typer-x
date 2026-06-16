@@ -30,7 +30,8 @@ export interface Mission {
   target: number
   progress: number
   completed: boolean
-  icon: string
+  claimed: boolean
+  icon: string // key into iconMap, see src/lib/icons.ts
 }
 
 // Shop item
@@ -41,11 +42,13 @@ export interface ShopItem {
   price: number
   owned: boolean
   description: string
-  icon: string
+  icon: string // key into iconMap, see src/lib/icons.ts
 }
 
 // Store state
 export interface StoreState {
+  activeTab: string
+  setActiveTab: (tab: string) => void
   player: Player | null
   missions: Mission[]
   shopItems: ShopItem[]
