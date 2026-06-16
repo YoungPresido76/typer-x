@@ -2,10 +2,12 @@ import { useStore } from '@/store/useStore'
 import { Card } from '@/components/ui/Card'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Badge } from '@/components/ui/Badge'
-import { xpForLevel, calculateLevel, xpToNextLevel, xpProgress, getLevelTitle } from '@/lib/xpFormula'
+import { Flame } from 'lucide-react'
+import { calculateLevel, xpToNextLevel, xpProgress, getLevelTitle } from '@/lib/xpFormula'
 
 export const HomeScreen = () => {
   const player = useStore((state) => state.player)
+  const setActiveTab = useStore((state) => state.setActiveTab)
 
   if (!player) {
     return <div className="text-center py-10">Loading...</div>
@@ -23,7 +25,7 @@ export const HomeScreen = () => {
           <img
             src={player.avatarUrl}
             alt={player.username}
-            className="w-16 h-16 rounded-l"
+            className="w-16 h-16 rounded-full"
           />
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-white">{player.username}</h2>
@@ -62,7 +64,9 @@ export const HomeScreen = () => {
         <Card variant="default">
           <div className="text-center">
             <p className="text-2xl font-bold text-accent">{player.streak}</p>
-            <p className="text-xs text-gray-400 mt-1">Day Streak 🔥</p>
+            <p className="text-xs text-gray-400 mt-1 flex items-center justify-center gap-1">
+              Day Streak <Flame size={12} />
+            </p>
           </div>
         </Card>
       </div>
@@ -71,13 +75,22 @@ export const HomeScreen = () => {
       <Card variant="default">
         <h3 className="font-semibold text-white mb-4">Quick Links</h3>
         <div className="space-y-2">
-          <button className="w-full p-3 bg-raised hover:bg-pressed rounded-m text-left transition-smooth text-sm">
+          <button
+            onClick={() => setActiveTab('leaderboard')}
+            className="w-full p-3 bg-raised hover:bg-pressed rounded-m text-left transition-smooth text-sm"
+          >
             View Leaderboard
           </button>
-          <button className="w-full p-3 bg-raised hover:bg-pressed rounded-m text-left transition-smooth text-sm">
+          <button
+            onClick={() => setActiveTab('missions')}
+            className="w-full p-3 bg-raised hover:bg-pressed rounded-m text-left transition-smooth text-sm"
+          >
             Check Missions
           </button>
-          <button className="w-full p-3 bg-raised hover:bg-pressed rounded-m text-left transition-smooth text-sm">
+          <button
+            onClick={() => setActiveTab('shop')}
+            className="w-full p-3 bg-raised hover:bg-pressed rounded-m text-left transition-smooth text-sm"
+          >
             Visit Shop
           </button>
         </div>

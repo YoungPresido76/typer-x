@@ -22,7 +22,7 @@ export const ProfileScreen = () => {
           <img
             src={player.avatarUrl}
             alt={player.username}
-            className="w-24 h-24 rounded-xl mx-auto mb-4"
+            className="w-24 h-24 rounded-full mx-auto mb-4"
           />
           <h3 className="text-2xl font-bold text-white">{player.username}</h3>
           <Badge variant="primary" size="md" className="mt-2">
