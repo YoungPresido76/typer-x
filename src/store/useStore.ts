@@ -24,7 +24,8 @@ const mockMissions: Mission[] = [
     target: 1000,
     progress: 750,
     completed: false,
-    icon: '📝',
+    claimed: false,
+    icon: 'keyboard',
   },
   {
     id: 'mission-2',
@@ -35,7 +36,8 @@ const mockMissions: Mission[] = [
     target: 100,
     progress: 100,
     completed: true,
-    icon: '⚡',
+    claimed: false,
+    icon: 'zap',
   },
   {
     id: 'mission-3',
@@ -45,8 +47,9 @@ const mockMissions: Mission[] = [
     coinsReward: 250,
     target: 7,
     progress: 7,
-    completed: false,
-    icon: '🔥',
+    completed: true,
+    claimed: true,
+    icon: 'flame',
   },
   {
     id: 'mission-4',
@@ -57,7 +60,8 @@ const mockMissions: Mission[] = [
     target: 100,
     progress: 85,
     completed: false,
-    icon: '🎯',
+    claimed: false,
+    icon: 'target',
   },
 ]
 
@@ -70,7 +74,7 @@ const mockShopItems: ShopItem[] = [
     price: 500,
     owned: true,
     description: 'Default theme with vibrant orange accents',
-    icon: '🟠',
+    icon: 'palette',
   },
   {
     id: 'theme-2',
@@ -79,7 +83,7 @@ const mockShopItems: ShopItem[] = [
     price: 800,
     owned: false,
     description: 'Cool blue futuristic theme',
-    icon: '🔵',
+    icon: 'palette',
   },
   {
     id: 'theme-3',
@@ -88,7 +92,7 @@ const mockShopItems: ShopItem[] = [
     price: 800,
     owned: false,
     description: 'Green terminal-inspired theme',
-    icon: '💚',
+    icon: 'palette',
   },
   {
     id: 'sound-1',
@@ -97,7 +101,7 @@ const mockShopItems: ShopItem[] = [
     price: 300,
     owned: true,
     description: 'Classic mechanical keyboard sounds',
-    icon: '⌨️',
+    icon: 'sound',
   },
   {
     id: 'sound-2',
@@ -106,7 +110,7 @@ const mockShopItems: ShopItem[] = [
     price: 400,
     owned: false,
     description: 'Playful bubble pop sounds',
-    icon: '🫧',
+    icon: 'sound',
   },
   {
     id: 'avatar-1',
@@ -115,7 +119,7 @@ const mockShopItems: ShopItem[] = [
     price: 600,
     owned: false,
     description: 'Stealthy ninja character avatar',
-    icon: '🥷',
+    icon: 'avatar',
   },
 ]
 
@@ -156,6 +160,9 @@ const mockLeaderboard: LeaderboardEntry[] = [
 ]
 
 export const useStore = create<StoreState>((set) => ({
+  activeTab: 'home',
+  setActiveTab: (tab) => set({ activeTab: tab }),
+
   player: mockPlayer,
   missions: mockMissions,
   shopItems: mockShopItems,
@@ -180,7 +187,9 @@ export const useStore = create<StoreState>((set) => ({
   claimMission: (missionId) =>
     set((state) => {
       const updatedMissions = state.missions.map((m) =>
-        m.id === missionId ? { ...m, completed: true } : m
+        m.id === missionId && m.completed && !m.claimed
+          ? { ...m, claimed: true }
+          : m
       )
       return { missions: updatedMissions }
     }),
