@@ -40,10 +40,9 @@ export const cumulativeXpToLevel = (level: number): number => {
  */
 export const xpProgress = (totalXp: number): number => {
   const currentLevel = calculateLevel(totalXp)
-  const xpAtCurrentLevel = cumulativeXpToLevel(currentLevel)
   const xpAtNextLevel = cumulativeXpToLevel(currentLevel + 1)
-  const xpInCurrentLevel = totalXp - xpAtCurrentLevel
-  const xpNeededInLevel = xpAtNextLevel - xpAtCurrentLevel
+  const xpInCurrentLevel = totalXp - cumulativeXpToLevel(currentLevel)
+  const xpNeededInLevel = xpAtNextLevel - cumulativeXpToLevel(currentLevel)
 
   if (currentLevel >= 50) return 100
 
