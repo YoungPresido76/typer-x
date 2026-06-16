@@ -14,9 +14,6 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Ignore deprecation warning for baseUrl until TypeScript 7.0 migration */
-    "ignoreDeprecations": "6.0",
-
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
