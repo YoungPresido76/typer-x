@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useStore } from '@/store/useStore'
 import { Header } from '@/components/layout/Header'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { HomeScreen } from '@/screens/HomeScreen'
@@ -9,7 +9,7 @@ import { ProfileScreen } from '@/screens/ProfileScreen'
 import { LeaderboardScreen } from '@/screens/LeaderboardScreen'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('home')
+  const activeTab = useStore((state) => state.activeTab)
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -49,7 +49,7 @@ function App() {
         subtitle={activeTab === 'home' ? 'Level up with every keystroke' : undefined}
       />
       {renderScreen()}
-      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <BottomNav />
     </div>
   )
 }
