@@ -68,9 +68,8 @@ export const xpToNextLevel = (totalXp: number): number => {
   const currentLevel = calculateLevel(totalXp)
   if (currentLevel >= 50) return 0
 
-  const xpAtCurrentLevel = cumulativeXpToLevel(currentLevel)
   const xpAtNextLevel = cumulativeXpToLevel(currentLevel + 1)
   const xpRemaining = xpAtNextLevel - totalXp
 
   return Math.max(0, xpRemaining)
-}
+      }
