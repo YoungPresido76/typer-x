@@ -3,6 +3,53 @@ import type { StoreState, Player, Mission, ShopItem, LeaderboardEntry } from '@/
 import { supabase } from '@/lib/supabase'
 import { calculateLevel } from '@/lib/xpFormula'
 
+// ── Raw DB row shapes (explicit — avoids TypeScript "never" inference) ──
+
+interface PlayerRow {
+  id: string
+  username: string
+  avatar_url: string
+  total_xp: number
+  level: number
+  coins: number
+  streak: number
+  last_played_date: string
+}
+
+interface MissionRow {
+  id: string
+  title: string
+  description: string
+  icon: string
+  xp_reward: number
+  coins_reward: number
+  target: number
+  progress: number
+  completed: boolean
+  claimed: boolean
+}
+
+interface ShopItemRow {
+  id: string
+  name: string
+  category: string
+  price: number
+  description: string
+  icon: string
+  player_shop_items: { owned: boolean; equipped: boolean }[] | null
+}
+
+interface LeaderboardRow {
+  id: string
+  username: string
+  avatar_url: string
+  level: number
+  total_xp: number
+  rank: number
+}
+
+// ── Store ─────────────────────────────────────────────────────────────────
+
 export const useStore = create<StoreState>((set, get) => ({
   activeTab: 'home',
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -17,7 +64,7 @@ export const useStore = create<StoreState>((set, get) => ({
   setShopItems: (items) => set({ shopItems: items }),
   setLeaderboard: (entries) => set({ leaderboard: entries }),
 
-  // ── Load all player data from Supabase after sign-in ─────────────
+  // ── Load all player data after sign-in ─────────────────────────────
   loadPlayerData: async (userId: string) => {
     // 1. Player profile
     const { data: playerRow, error: playerErr } = await supabase
@@ -31,17 +78,19 @@ export const useStore = create<StoreState>((set, get) => ({
       return
     }
 
+    const row = playerRow as PlayerRow
+
     const player: Player = {
-      uid: playerRow.id,
-      username: playerRow.username,
+      uid: row.id,
+      username: row.username,
       avatarUrl:
-        playerRow.avatar_url ||
-        `https://api.dicebear.com/7.x/avataaars/svg?seed=${playerRow.username}`,
-      level: calculateLevel(playerRow.total_xp),
-      totalXp: playerRow.total_xp,
-      coins: playerRow.coins,
-      streak: playerRow.streak,
-      lastPlayedDate: playerRow.last_played_date,
+        row.avatar_url ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${row.username}`,
+      level: calculateLevel(row.total_xp),
+      totalXp: row.total_xp,
+      coins: row.coins,
+      streak: row.streak,
+      lastPlayedDate: row.last_played_date,
     }
     set({ player })
 
@@ -53,7 +102,7 @@ export const useStore = create<StoreState>((set, get) => ({
       .order('created_at', { ascending: true })
 
     if (missionRows) {
-      const missions: Mission[] = missionRows.map((m) => ({
+      const missions: Mission[] = (missionRows as MissionRow[]).map((m) => ({
         id: m.id,
         title: m.title,
         description: m.description,
@@ -75,12 +124,12 @@ export const useStore = create<StoreState>((set, get) => ({
       .eq('player_shop_items.player_id', userId)
 
     if (catalogRows) {
-      const shopItems: ShopItem[] = catalogRows.map((item) => {
+      const shopItems: ShopItem[] = (catalogRows as ShopItemRow[]).map((item) => {
         const ownership = item.player_shop_items?.[0]
         return {
           id: item.id,
           name: item.name,
-          category: item.category,
+          category: item.category as ShopItem['category'],
           price: item.price,
           description: item.description,
           icon: item.icon,
@@ -95,7 +144,7 @@ export const useStore = create<StoreState>((set, get) => ({
     await get().refreshLeaderboard()
   },
 
-  // ── Refresh leaderboard from Supabase view ───────────────────────
+  // ── Leaderboard ────────────────────────────────────────────────────
   refreshLeaderboard: async () => {
     const { data: rows } = await supabase
       .from('leaderboard')
@@ -104,7 +153,7 @@ export const useStore = create<StoreState>((set, get) => ({
       .limit(50)
 
     if (rows) {
-      const entries: LeaderboardEntry[] = rows.map((row) => ({
+      const entries: LeaderboardEntry[] = (rows as LeaderboardRow[]).map((row) => ({
         uid: row.id,
         username: row.username,
         avatarUrl:
@@ -118,6 +167,7 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
 
+  // ── XP (local update — keyboard bridge will call this) ─────────────
   incrementXp: (xp) =>
     set((state) => {
       if (!state.player) return state
@@ -131,34 +181,25 @@ export const useStore = create<StoreState>((set, get) => ({
       }
     }),
 
+  // ── Claim mission reward ───────────────────────────────────────────
   claimMission: async (missionId: string) => {
     const { missions, player } = get()
     const mission = missions.find((m) => m.id === missionId)
     if (!mission || !mission.completed || mission.claimed || !player) return
 
-    // Update Supabase
     await supabase
       .from('missions')
-      .update({ claimed: true })
+      .update({ claimed: true } as Record<string, unknown>)
       .eq('id', missionId)
       .eq('player_id', player.uid)
 
-    // Award XP + coins via server function
-    await supabase.rpc('submit_typing_session', {
-      p_words_typed: mission.xpReward,
-      p_duration_seconds: 60,
-    })
-
-    // Update coins locally
     await supabase
       .from('players')
-      .update({ coins: player.coins + mission.coinsReward })
+      .update({ coins: player.coins + mission.coinsReward } as Record<string, unknown>)
       .eq('id', player.uid)
 
-    // Refresh player data
     await get().loadPlayerData(player.uid)
 
-    // Update mission in local state
     set({
       missions: missions.map((m) =>
         m.id === missionId ? { ...m, claimed: true } : m
@@ -166,26 +207,27 @@ export const useStore = create<StoreState>((set, get) => ({
     })
   },
 
+  // ── Purchase shop item ─────────────────────────────────────────────
   purchaseItem: async (itemId: string) => {
     const { shopItems, player } = get()
     const item = shopItems.find((i) => i.id === itemId)
     if (!item || item.owned || !player || player.coins < item.price) return
 
-    // Deduct coins
     const { error } = await supabase
       .from('players')
-      .update({ coins: player.coins - item.price })
+      .update({ coins: player.coins - item.price } as Record<string, unknown>)
       .eq('id', player.uid)
 
     if (error) return
 
-    // Record ownership
-    await supabase.from('player_shop_items').upsert({
-      player_id: player.uid,
-      item_id: itemId,
-      owned: true,
-      equipped: false,
-    })
+    await supabase
+      .from('player_shop_items')
+      .upsert({
+        player_id: player.uid,
+        item_id: itemId,
+        owned: true,
+        equipped: false,
+      } as Record<string, unknown>)
 
     set({
       player: { ...player, coins: player.coins - item.price },
