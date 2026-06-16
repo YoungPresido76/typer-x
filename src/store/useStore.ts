@@ -1,204 +1,197 @@
 import { create } from 'zustand'
 import type { StoreState, Player, Mission, ShopItem, LeaderboardEntry } from '@/types'
+import { supabase } from '@/lib/supabase'
+import { calculateLevel } from '@/lib/xpFormula'
 
-// Mock player data
-const mockPlayer: Player = {
-  uid: 'user-001',
-  username: 'TyperX',
-  level: 14,
-  totalXp: 280000,
-  coins: 2500,
-  streak: 7,
-  avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=TyperX',
-  lastPlayedDate: new Date().toISOString(),
-}
-
-// Mock missions
-const mockMissions: Mission[] = [
-  {
-    id: 'mission-1',
-    title: 'Daily Grind',
-    description: 'Type 1000 words today',
-    xpReward: 100,
-    coinsReward: 50,
-    target: 1000,
-    progress: 750,
-    completed: false,
-    claimed: false,
-    icon: 'keyboard',
-  },
-  {
-    id: 'mission-2',
-    title: 'Speed Demon',
-    description: 'Type 100 words in 1 minute',
-    xpReward: 150,
-    coinsReward: 100,
-    target: 100,
-    progress: 100,
-    completed: true,
-    claimed: false,
-    icon: 'zap',
-  },
-  {
-    id: 'mission-3',
-    title: 'Week Warrior',
-    description: 'Maintain a 7-day typing streak',
-    xpReward: 500,
-    coinsReward: 250,
-    target: 7,
-    progress: 7,
-    completed: true,
-    claimed: true,
-    icon: 'flame',
-  },
-  {
-    id: 'mission-4',
-    title: 'Accuracy Master',
-    description: 'Type 100 words with 98% accuracy',
-    xpReward: 200,
-    coinsReward: 150,
-    target: 100,
-    progress: 85,
-    completed: false,
-    claimed: false,
-    icon: 'target',
-  },
-]
-
-// Mock shop items
-const mockShopItems: ShopItem[] = [
-  {
-    id: 'theme-1',
-    name: 'Neon Orange',
-    category: 'theme',
-    price: 500,
-    owned: true,
-    description: 'Default theme with vibrant orange accents',
-    icon: 'palette',
-  },
-  {
-    id: 'theme-2',
-    name: 'Cyber Blue',
-    category: 'theme',
-    price: 800,
-    owned: false,
-    description: 'Cool blue futuristic theme',
-    icon: 'palette',
-  },
-  {
-    id: 'theme-3',
-    name: 'Matrix Green',
-    category: 'theme',
-    price: 800,
-    owned: false,
-    description: 'Green terminal-inspired theme',
-    icon: 'palette',
-  },
-  {
-    id: 'sound-1',
-    name: 'Mechanical',
-    category: 'sound',
-    price: 300,
-    owned: true,
-    description: 'Classic mechanical keyboard sounds',
-    icon: 'sound',
-  },
-  {
-    id: 'sound-2',
-    name: 'Bubble Pop',
-    category: 'sound',
-    price: 400,
-    owned: false,
-    description: 'Playful bubble pop sounds',
-    icon: 'sound',
-  },
-  {
-    id: 'avatar-1',
-    name: 'Ninja Typist',
-    category: 'avatar',
-    price: 600,
-    owned: false,
-    description: 'Stealthy ninja character avatar',
-    icon: 'avatar',
-  },
-]
-
-// Mock leaderboard
-const mockLeaderboard: LeaderboardEntry[] = [
-  {
-    uid: 'user-phantom',
-    username: 'PhantomType',
-    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=phantom',
-    level: 47,
-    totalXp: 3500000,
-    rank: 1,
-  },
-  {
-    uid: 'user-speed',
-    username: 'SpeedDemon',
-    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=speed',
-    level: 43,
-    totalXp: 3100000,
-    rank: 2,
-  },
-  {
-    uid: 'user-master',
-    username: 'KeyMaster',
-    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=master',
-    level: 41,
-    totalXp: 2800000,
-    rank: 3,
-  },
-  {
-    uid: 'user-001',
-    username: 'TyperX',
-    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=typerx',
-    level: 14,
-    totalXp: 280000,
-    rank: 4,
-  },
-]
-
-export const useStore = create<StoreState>((set) => ({
+export const useStore = create<StoreState>((set, get) => ({
   activeTab: 'home',
   setActiveTab: (tab) => set({ activeTab: tab }),
 
-  player: mockPlayer,
-  missions: mockMissions,
-  shopItems: mockShopItems,
-  leaderboard: mockLeaderboard,
+  player: null,
+  missions: [],
+  shopItems: [],
+  leaderboard: [],
 
   setPlayer: (player) => set({ player }),
   setMissions: (missions) => set({ missions }),
   setShopItems: (items) => set({ shopItems: items }),
   setLeaderboard: (entries) => set({ leaderboard: entries }),
 
+  // ── Load all player data from Supabase after sign-in ─────────────
+  loadPlayerData: async (userId: string) => {
+    // 1. Player profile
+    const { data: playerRow, error: playerErr } = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (playerErr || !playerRow) {
+      console.error('Failed to load player:', playerErr?.message)
+      return
+    }
+
+    const player: Player = {
+      uid: playerRow.id,
+      username: playerRow.username,
+      avatarUrl:
+        playerRow.avatar_url ||
+        `https://api.dicebear.com/7.x/avataaars/svg?seed=${playerRow.username}`,
+      level: calculateLevel(playerRow.total_xp),
+      totalXp: playerRow.total_xp,
+      coins: playerRow.coins,
+      streak: playerRow.streak,
+      lastPlayedDate: playerRow.last_played_date,
+    }
+    set({ player })
+
+    // 2. Missions
+    const { data: missionRows } = await supabase
+      .from('missions')
+      .select('*')
+      .eq('player_id', userId)
+      .order('created_at', { ascending: true })
+
+    if (missionRows) {
+      const missions: Mission[] = missionRows.map((m) => ({
+        id: m.id,
+        title: m.title,
+        description: m.description,
+        icon: m.icon,
+        xpReward: m.xp_reward,
+        coinsReward: m.coins_reward,
+        target: m.target,
+        progress: m.progress,
+        completed: m.completed,
+        claimed: m.claimed,
+      }))
+      set({ missions })
+    }
+
+    // 3. Shop items (catalog + ownership)
+    const { data: catalogRows } = await supabase
+      .from('shop_items')
+      .select('*, player_shop_items!left(owned, equipped)')
+      .eq('player_shop_items.player_id', userId)
+
+    if (catalogRows) {
+      const shopItems: ShopItem[] = catalogRows.map((item) => {
+        const ownership = item.player_shop_items?.[0]
+        return {
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          price: item.price,
+          description: item.description,
+          icon: item.icon,
+          owned: ownership?.owned ?? false,
+          equipped: ownership?.equipped ?? false,
+        }
+      })
+      set({ shopItems })
+    }
+
+    // 4. Leaderboard
+    await get().refreshLeaderboard()
+  },
+
+  // ── Refresh leaderboard from Supabase view ───────────────────────
+  refreshLeaderboard: async () => {
+    const { data: rows } = await supabase
+      .from('leaderboard')
+      .select('*')
+      .order('rank', { ascending: true })
+      .limit(50)
+
+    if (rows) {
+      const entries: LeaderboardEntry[] = rows.map((row) => ({
+        uid: row.id,
+        username: row.username,
+        avatarUrl:
+          row.avatar_url ||
+          `https://api.dicebear.com/7.x/avataaars/svg?seed=${row.username}`,
+        level: row.level,
+        totalXp: row.total_xp,
+        rank: row.rank,
+      }))
+      set({ leaderboard: entries })
+    }
+  },
+
   incrementXp: (xp) =>
     set((state) => {
       if (!state.player) return state
+      const newTotalXp = state.player.totalXp + xp
       return {
         player: {
           ...state.player,
-          totalXp: state.player.totalXp + xp,
+          totalXp: newTotalXp,
+          level: calculateLevel(newTotalXp),
         },
       }
     }),
 
-  claimMission: (missionId) =>
-    set((state) => {
-      const updatedMissions = state.missions.map((m) =>
-        m.id === missionId && m.completed && !m.claimed
-          ? { ...m, claimed: true }
-          : m
-      )
-      return { missions: updatedMissions }
-    }),
+  claimMission: async (missionId: string) => {
+    const { missions, player } = get()
+    const mission = missions.find((m) => m.id === missionId)
+    if (!mission || !mission.completed || mission.claimed || !player) return
 
-  purchaseItem: (itemId) =>
-    set((state) => {
-      const updatedItems = state.shopItems.map((item) =>
-        item.id === itemId ? { ...item, owned: true } : item
-      )
-      return { shopItems: updatedItems }
-    }),
+    // Update Supabase
+    await supabase
+      .from('missions')
+      .update({ claimed: true })
+      .eq('id', missionId)
+      .eq('player_id', player.uid)
+
+    // Award XP + coins via server function
+    await supabase.rpc('submit_typing_session', {
+      p_words_typed: mission.xpReward,
+      p_duration_seconds: 60,
+    })
+
+    // Update coins locally
+    await supabase
+      .from('players')
+      .update({ coins: player.coins + mission.coinsReward })
+      .eq('id', player.uid)
+
+    // Refresh player data
+    await get().loadPlayerData(player.uid)
+
+    // Update mission in local state
+    set({
+      missions: missions.map((m) =>
+        m.id === missionId ? { ...m, claimed: true } : m
+      ),
+    })
+  },
+
+  purchaseItem: async (itemId: string) => {
+    const { shopItems, player } = get()
+    const item = shopItems.find((i) => i.id === itemId)
+    if (!item || item.owned || !player || player.coins < item.price) return
+
+    // Deduct coins
+    const { error } = await supabase
+      .from('players')
+      .update({ coins: player.coins - item.price })
+      .eq('id', player.uid)
+
+    if (error) return
+
+    // Record ownership
+    await supabase.from('player_shop_items').upsert({
+      player_id: player.uid,
+      item_id: itemId,
+      owned: true,
+      equipped: false,
+    })
+
+    set({
+      player: { ...player, coins: player.coins - item.price },
+      shopItems: shopItems.map((i) =>
+        i.id === itemId ? { ...i, owned: true } : i
+      ),
+    })
+  },
 }))
