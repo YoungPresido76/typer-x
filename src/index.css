@@ -110,8 +110,8 @@ body {
 
 /* ── SLIDE IN XP BAR ── */
 @keyframes slide-up {
-  '0%': { transform: 'translateY(100%)', opacity: '0' };
-  '100%': { transform: 'translateY(0)', opacity: '1' };
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
 
 /* ── GRADIENT TEXT ── */
@@ -129,4 +129,4 @@ body {
 button:focus-visible, a:focus-visible {
   outline: 2px solid #FF7A1A;
   outline-offset: 2px;
-}
+    }
